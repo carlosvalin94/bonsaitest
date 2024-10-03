@@ -2,8 +2,6 @@
 
 # Archivo de configuración
 CONFIG_FILE="/var/home/$USER/.local/share/applications/bambu-control/update_config.conf"
-# URL para verificar la última versión de Fedora Silverblue
-URL_SILVERBLUE="https://raw.githubusercontent.com/carlosvalin94/bonsaitest/main/latest-release"
 
 # Función para leer el archivo de configuración
 read_config() {
@@ -33,6 +31,7 @@ send_notification() {
     TITLE="$1"
     MESSAGE="$2"
     notify-send "$TITLE" "$MESSAGE"
+    echo "$TITLE: $MESSAGE"
 }
 
 # Función para verificar si ha pasado el tiempo necesario desde la última verificación
@@ -67,11 +66,10 @@ check_time_interval() {
 check_silverblue_version() {
     echo "Verificando la última versión de Fedora Silverblue..."
 
-    # Obtener la última versión desde el repositorio
-    LATEST_VERSION=$(curl -s $URL_SILVERBLUE)
+    LATEST_VERSION=$(cat "/var/home/$USER/.local/share/applications/bambu-control/latest-release")
 
     # Verificar si hubo algún error al obtener la versión
-    if [[ $? -ne 0 || -z "$LATEST_VERSION" ]]; then
+    if [[ -z "$LATEST_VERSION" ]]; then
         send_notification "Error" "No se pudo verificar la última versión de Silverblue."
         return
     fi
@@ -84,15 +82,7 @@ check_silverblue_version() {
 
         # Aplicar nueva versión (rebase)
         echo "Aplicando rebase a la versión: $LATEST_VERSION..."
-        echo -n "Progreso: ["
-
-        # Leer la salida de rpm-ostree y mostrar progreso continuo
-        rpm-ostree rebase "${LATEST_VERSION}" | tee /dev/tty | while IFS= read -r line; do
-            # Agregar un "=" por cada línea recibida, simulando el progreso
-            echo -n "="
-        done
-
-        echo "]"
+        rpm-ostree rebase "${LATEST_VERSION}" | tee /dev/tty
 
         if [[ $? -eq 0 ]]; then
             send_notification "Actualización completada" "Fedora Silverblue actualizado a la versión $LATEST_VERSION."
@@ -107,16 +97,9 @@ check_silverblue_version() {
 # Función para aplicar actualizaciones del sistema (paquetes)
 apply_updates() {
     echo "Aplicando actualizaciones del sistema..."
-    
-    # Mostrar un simple indicador de progreso
-    echo -n "Progreso: ["
-    rpm-ostree upgrade | tee /dev/tty | while IFS= read -r line; do
-        # Agregar un "=" por cada línea recibida, simulando el progreso
-        echo -n "="
-    done
-    
-    echo "]"
-    
+
+    rpm-ostree upgrade | tee /dev/tty
+
     # Verificar si no hay actualizaciones
     if rpm-ostree upgrade | grep -q "No upgrade available"; then
         send_notification "Sin actualizaciones" "No hay actualizaciones de paquetes disponibles."
@@ -147,6 +130,7 @@ continuous_execution() {
             fi
         else
             echo "Actualizaciones automáticas deshabilitadas."
+            sleep 3600  # Esperar una hora antes de verificar nuevamente
         fi
     done
 }
@@ -155,7 +139,7 @@ continuous_execution() {
 single_execution() {
     read_config
 
-    # Se eliminó la verificación de AUTO_UPDATES_ENABLED para ejecutar las actualizaciones siempre
+    # Ejecutar las actualizaciones siempre, sin verificar AUTO_UPDATES_ENABLED
     apply_updates
     check_silverblue_version
     LAST_UPDATE_CHECK=$(date +%s)  # Actualizar la hora de la última verificación
