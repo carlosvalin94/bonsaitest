@@ -2,7 +2,7 @@
 Name=Bambu Control
 Comment=Ejecuta el script de Python test.py
 Exec=sh -c "python3 $HOME/.local/share/applications/bambu-control/test.py"
-Icon=/etc/xdg/applications/bambu-control/logo.gif
+Icon=TEMPATH
 Terminal=false
 Type=Application
 Categories=Utility;
