@@ -82,7 +82,7 @@ check_silverblue_version() {
 
         # Aplicar nueva versión (rebase)
         echo "Aplicando rebase a la versión: $LATEST_VERSION..."
-        rpm-ostree rebase "${LATEST_VERSION}" | tee /dev/tty
+        rpm-ostree rebase "${LATEST_VERSION}"
 
         if [[ $? -eq 0 ]]; then
             send_notification "Actualización completada" "Fedora Silverblue actualizado a la versión $LATEST_VERSION."
@@ -98,7 +98,7 @@ check_silverblue_version() {
 apply_updates() {
     echo "Aplicando actualizaciones del sistema..."
 
-    rpm-ostree upgrade | tee /dev/tty
+    rpm-ostree upgrade
 
     # Verificar si no hay actualizaciones
     if rpm-ostree upgrade | grep -q "No upgrade available"; then
